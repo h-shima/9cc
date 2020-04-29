@@ -105,7 +105,7 @@ Token *tokenize(char *input) {
 			continue;
 		}
 
-		if (*p == '+' || *p == '-') {
+		if (strchr("+-*/()",*p)) {
 			cur = new_token(TK_RESERVED, cur, p++);
 			continue;
 		}
@@ -176,15 +176,26 @@ Node *expr() {
 	}
 }
 
-// TODO: 後から*, /, ()に対応
-// 今は数字のノードを返すだけ
 Node *mul() {
 	Node *node = primary();
-	return node;
+
+	for (;;) {
+		if (consume('*'))
+			node = new_node(ND_MUL, node, primary());
+		else if (consume('/'))
+			node = new_node(ND_DIV, node, primary());
+		else
+			return node;
+	}
 }
 
-// TODO: 後から '(' expr ')' に対応
 Node *primary() {
+	if (consume('(')) {
+		Node *node = expr();
+		expect(')');
+		return node;
+	}
+
 	return new_node_num(expect_number());
 }
 
@@ -209,9 +220,16 @@ void gen(Node *node) {
 		case ND_SUB:
 			printf("	sub rax, rdi\n");
 			break;
+		case ND_MUL:
+			printf("	imul rax, rdi\n");
+			break;
+		case ND_DIV:
+			printf("	cqo\n");
+			printf("	idiv rdi\n");
+			break;
 	}
 
-	// 計算結果をraxレジスタにプッシュする
+	// 計算結果のraxレジスタをプッシュする
 	printf("	push rax\n");
 }
 

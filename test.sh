@@ -17,8 +17,15 @@ assert(){
   fi
 }
 
+# 1つだけ渡された整数の表示
 assert 0 0
 assert 42 42
+# 加算、減算、空白の削除
 assert 21 '5+20-4'
 assert 41 ' 12   +34 - 5'
+# 乗算、除算、()による演算順の変更
+assert 47 '5+6*7'
+assert 15 '5*(9-6)'
+assert  4 '(3+5)/2'
+
 echo OK
