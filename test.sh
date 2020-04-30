@@ -33,5 +33,18 @@ assert  0 '-10*+5+50'
 assert  8 '+5-(6 / -2)'
 assert 10 '- -10'
 assert 10 '- - +10'
+# 比較演算子(==, !=, <= <, >=, >)
+assert  1 '-1==-1'
+assert  0  '-1 == 1'
+assert  0  '-1!=-1'
+assert  1  '-1!=1'
+assert  1  '-1<=-1'
+assert  1  '1 <=2'
+assert  0  '-1<-1'
+assert  1  '1 < 2'
+assert  1  '-1>=-1'
+assert  1  '-1 >= -2'
+assert  0  '-1>-1'
+assert  1  '-1 > -2'
 
 echo OK
