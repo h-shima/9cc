@@ -1,16 +1,24 @@
 #include "9cc.h"
 
 Token *token;
+// セミコロン区切りで複数の式が書けるため、パースの結果としての複数のノードを保存しておくための配列
+Node *code[100];
+
+Node *stmt();
+Node *expr();
+Node *assign();
 Node *equality();
 Node *relational();
 Node *add();
 Node *mul();
 Node *unary();
+Node *primary();
 Node *new_node(NodeKind kind, Node *lhs, Node *rhs);
 Node *new_node_num(int val);
-Node *primary();
+Node *new_node_ident(Token *tok);
 bool startswith(char *p, char *q);
 bool consume(char *op);
+Token *consume_ident();
 void expect(char *op);
 int expect_number();
 bool at_eof();
@@ -27,6 +35,17 @@ bool consume(char *op) {
 
 	token = token->next;
 	return true;
+}
+
+Token *consume_ident() {
+	Token *tok = token;
+
+	if (token->kind == TK_IDENT) {
+		token = token->next;
+		return tok;
+	}
+
+	return NULL;
 }
 
 // 次のトークンが期待している記号の時には、トークンを1つ読み進める。
@@ -85,6 +104,11 @@ Token *tokenize(char *input) {
 			continue;
 		}
 
+		if ('a' <= *p && *p <= 'z') {
+			cur = new_token(TK_IDENT, cur, p++, 1);
+			continue;
+		}
+
 		if (startswith(p, "==") || startswith(p, "!=") ||
 			startswith(p, "<=") || startswith(p, ">=")) {
 			cur = new_token(TK_RESERVED, cur, p, 2);
@@ -92,7 +116,7 @@ Token *tokenize(char *input) {
 			continue;
 		}
 
-		if (strchr("+-*/()<>",*p)) {
+		if (strchr("+-*/()<>;=",*p)) {
 			cur = new_token(TK_RESERVED, cur, p++, 1);
 			continue;
 		}
@@ -127,8 +151,39 @@ Node *new_node_num(int val) {
 	return node;
 }
 
+Node *new_node_ident(Token *tok) {
+	Node *node = calloc(1, sizeof(Node));
+	node->kind = ND_LVAR;
+	node->offset = (tok->str[0] - 'a' + 1) * 8;
+	return node;
+}
+
+void program() {
+	int i = 0;
+	while (!at_eof())
+		code[i++] = stmt();
+
+	code[i] = NULL;
+}
+
+Node *stmt() {
+	Node *node = expr();
+	expect(";");
+	return node;
+}
+
 Node *expr() {
+	Node *node = assign();
+	return node;
+}
+
+Node *assign() {
 	Node *node = equality();
+
+	if (consume("=")) {
+		node = new_node(ND_ASSIGN, node, assign());
+	}
+
 	return node;
 }
 
@@ -204,6 +259,12 @@ Node *primary() {
 		Node *node = expr();
 		expect(")");
 		return node;
+	}
+
+	Token *tok = consume_ident();
+
+	if (tok) {
+		return new_node_ident(tok);
 	}
 
 	return new_node_num(expect_number());
