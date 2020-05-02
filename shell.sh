@@ -1,2 +1,3 @@
 #!/bin/bash
-docker run --rm -it -v $PWD/:/home/user/9cc compilerbook
+# https://sott0n.github.io/posts/docker_gdb/
+docker run --rm -it --cap-add=SYS_PTRACE --security-opt="seccomp=unconfined" -v $PWD/:/home/user/9cc compilerbook
