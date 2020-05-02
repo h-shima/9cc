@@ -16,9 +16,12 @@ int main(int argc, char **argv) {
 	program();
 
 	// あらかじめ必要な変数領域を計算する
-	int offset = 0;
-	for (LVar *var = locals; var; var = var->next) {
-		offset += 8;
+    // locals はポインタなので、実体が無い場合は 0 が入っている
+	int offset;
+	if (locals) {
+		offset = locals->offset;
+	} else {
+		offset = 0;
 	}
 
 	// アセンブリの前半部分を出力

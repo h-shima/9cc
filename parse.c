@@ -23,8 +23,6 @@ Node *mul();
 Node *unary();
 Node *primary();
 
-LVar *locals;
-
 // パースの時に、引数のトークンの変数がすでにパース済みか検索する
 // なければNULLを返す
 LVar *find_lvar(Token *tok) {
@@ -225,6 +223,7 @@ Node *primary() {
 			lvar->next   = locals;
 			lvar->name   = tok->str;
 			lvar->len    = tok->len;
+			// locals はポインタなので、実体が無い場合は 0 が入っている
 			if (locals) {
 				lvar->offset = locals->offset + 8;
 			} else {
