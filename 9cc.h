@@ -23,15 +23,6 @@ struct Token {
 	int len;        // トークンの長さ
 };
 
-void error(char *fmt, ...);
-void error_at(char *loc, char *fmt, ...);
-
-// 入力プログラム
-extern char *user_input;
-
-// 現在着目しているトークン
-extern Token *token;
-
 // 抽象構文木のノードの種類
 typedef enum {
 	ND_ADD, // +
@@ -57,10 +48,17 @@ struct Node {
 	int offset;    // kind が ND_LVAR の場合のみ使う
 };
 
-void program();
+// 入力プログラム
+extern char *user_input;
+// 現在着目しているトークン
+extern Token *token;
+
 Token *tokenize(char *input);
-Node *expr();
+void program();
 void gen_lval(Node *node);
 void gen(Node *node);
-
+// パースの結果としての複数のノードを保存しておくための配列の宣言
 struct Node *code[100];
+
+void error(char *fmt, ...);
+void error_at(char *loc, char *fmt, ...);
