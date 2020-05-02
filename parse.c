@@ -23,6 +23,19 @@ Node *mul();
 Node *unary();
 Node *primary();
 
+LVar *locals;
+
+// パースの時に、引数のトークンの変数がすでにパース済みか検索する
+// なければNULLを返す
+LVar *find_lvar(Token *tok) {
+	for (LVar *var = locals; var; var = var->next) {
+		if (var->len == tok->len && !memcmp(tok->str, var->name, var->len)) {
+			return var;
+		}
+	}
+	return NULL;
+}
+
 // 次のトークンが期待している記号の時には、トークンを1つ読み進めて
 // 真を返す。それ以外の場合には偽を返す。
 bool consume(char *op) {
@@ -72,8 +85,6 @@ int expect_number() {
 bool at_eof() {
 	return token->kind == TK_EOF;
 }
-
-
 
 Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
 	Node *node = calloc(1, sizeof(Node));
@@ -201,10 +212,32 @@ Node *primary() {
 	}
 
 	Token *tok = consume_ident();
-
 	if (tok) {
-		return new_node_ident(tok);
+		Node *node = calloc(1, sizeof(Node));
+		node->kind = ND_LVAR;
+
+		LVar *lvar = find_lvar(tok);
+
+		if (lvar) {
+			node->offset = lvar->offset;
+		} else {
+			lvar = calloc(1, sizeof(LVar));
+			lvar->next   = locals;
+			lvar->name   = tok->str;
+			lvar->len    = tok->len;
+			if (locals) {
+				lvar->offset = locals->offset + 8;
+			} else {
+				lvar->offset = 8;
+			}
+			node->offset = lvar->offset;
+			locals = lvar;
+		}
+
+		return node;
 	}
+
+
 
 	return new_node_num(expect_number());
 }

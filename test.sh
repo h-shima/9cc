@@ -53,5 +53,8 @@ assert  2  'a=2;'
 assert  2  'a=2; a;'
 assert 14  'a= 3; b = 5* 6-8; a+b /2;'
 assert  2  'a=b=c=2; a = a+b-c; a;'
-
+# 複数文字のローカル変数(アルファベットと数字)を使用できる
+assert  2  'a10B=2; a10B;'
+assert 14  'foo =3; bar = 5*6-8; foo+bar/2;'
+assert  2  'hoge=fuga=piyo=2; hoge = hoge+fuga-piyo; hoge;'
 echo OK

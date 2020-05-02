@@ -48,10 +48,21 @@ struct Node {
 	int offset;    // kind が ND_LVAR の場合のみ使う
 };
 
+// ローカル変数の型
+typedef struct LVar LVar;
+struct LVar {
+	LVar *next; // 次の変数かNULL
+	char *name; // 変数の名前
+	int len;    // 名前の長さ
+	int offset; // RBPからのオフセット
+};
+
 // 入力プログラム
 extern char *user_input;
 // 現在着目しているトークン
 extern Token *token;
+// ローカル変数(ローカル変数リストのトップ)
+extern LVar *locals;
 
 Token *tokenize(char *input);
 void program();

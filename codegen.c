@@ -1,5 +1,7 @@
 #include "9cc.h"
 
+// 式を左辺値（左辺に書くことができる値のこと）として評価する
+// 変数のノードを引数として取り、その変数のアドレスを計算してそれをスタックにプッシュする
 void gen_lval(Node *node) {
 	if (node->kind != ND_LVAR)
 		error("代入の左辺値が変数ではありません");
@@ -15,19 +17,23 @@ void gen(Node *node) {
 			printf("	push %d\n", node->val);
 			return;
 		case ND_LVAR:
+			// nodeの変数が格納されているアドレスをスタックにプッシュする
 			gen_lval(node);
 			printf("	pop rax\n");
-			// mov dst, [src] srcレジスタの値をアドレスとみなしてそこから値をロードしdstに保存する
+			// nodeの変数が格納されているアドレスからローカル変数の値を読み出し、
+			// raxレジスタにコピーする
 			printf("	mov rax, [rax]\n");
 			printf("	push rax\n");
 			return;
 		case ND_ASSIGN:
+			// ノードの左辺（代入先の変数）の変数が格納されているアドレスをスタックにプッシュする
 			gen_lval(node->lhs);
+			// ノードの右辺（左辺に代入する変数や数値を計算して数値にした値）をスタックにプッシュする
 			gen(node->rhs);
 
 			printf("	pop rdi\n");
 			printf("	pop rax\n");
-			// mov [dst], src dstレジスタの値をアドレスとみなして、srcレジスタの値をそこにストアする
+			// raxレジスタの値（変数が格納されているアドレス）をアドレスとみなしてrdiレジスタの値（代入する数値）をストアする
 			printf("	mov [rax], rdi\n");
 			printf("	push rdi\n");
 			return;
