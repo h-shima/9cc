@@ -37,7 +37,7 @@ LVar *find_lvar(Token *tok) {
 // 次のトークンが期待している記号の時には、トークンを1つ読み進めて
 // 真を返す。それ以外の場合には偽を返す。
 bool consume(char *op) {
-	if (token->kind != TK_RESERVED ||
+	if (token->kind != TK_RESERVED && token->kind != TK_RETURN ||
 		strlen(op) != token->len ||
 		memcmp(token->str, op, token->len)) {
 		return false;
@@ -115,7 +115,16 @@ void program() {
 }
 
 Node *stmt() {
-	Node *node = expr();
+	Node *node;
+
+	if(consume("return")) {
+		node = calloc(1, sizeof(Node));
+		node->kind = ND_RETURN;
+		node->lhs = expr();
+	} else {
+		node = expr();
+	}
+
 	expect(";");
 	return node;
 }
