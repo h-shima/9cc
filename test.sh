@@ -47,7 +47,7 @@ assert  1 'return -1 >= -2;'
 assert  0 'return -1>-1;'
 assert  1 'return -1 > -2;'
 # セミコロンで文を分割できる
-assert  3 '1; 2; 3;'
+assert  3 '1; 2; return 3;'
 # １文字のローカル変数(a〜z)を使用できる
 assert  2 'return a=2;'
 assert  2 'a=2; return a;'
@@ -60,5 +60,12 @@ assert  2 'hoge=fuga=piyo=2; hoge = hoge+fuga-piyo; return hoge;'
 # return文が使用できる
 assert 14 'foo =3; bar = 5*6-8; return foo+bar/2;'
 assert 30 'a=30; return a;'
+# シンプルはif文 if (A) B が使用できる
+assert   5 'if (1) return 5;'
+assert  10 'a = 1; b = 2; if (a + b < 4) return 10;'
+assert   3 'a = 1; if (a) b = 2; return a + b;'
+assert   1 'a = 1; if (0) a = 3; return a;'
+assert   5 'if (1) a = 2; b = 3; return a +b;'
+assert  10 'return 10; if (1) a = 2; return a;'
 
 echo OK

@@ -13,13 +13,25 @@ void gen_lval(Node *node) {
 
 void gen(Node *node) {
 	switch (node->kind) {
+		case ND_EXPR_STMT:
+			gen(node->lhs);
+			printf("	pop rax\n");
+			return;
+		case ND_IF:
+			// if (A) B における A の評価結果がスタックトップに入る
+			gen(node->lhs);
+			printf("	pop rax\n");
+			printf("	cmp rax, 0\n");
+			printf("	je .LendXXX\n");
+			// if (A) B における B のアセンブリを出力
+			gen(node->rhs);
+			printf(".LendXXX:\n");
+			return;
 		case ND_RETURN:
 			// returnの返り値になっている式の出力
 			gen(node->lhs);
 			printf("	pop rax\n");
-			printf("	mov rsp, rbp\n");
-			printf("	pop rbp\n");
-			printf("	ret\n");
+			printf("jmp .L.return\n");
 			return;
 		case ND_NUM:
 			printf("	push %d\n", node->val);

@@ -4,6 +4,8 @@
 Node *code[100];
 
 bool consume(char *op);
+bool consume_return();
+bool consume_if();
 Token *consume_ident();
 void expect(char *op);
 int  expect_number();
@@ -37,9 +39,31 @@ LVar *find_lvar(Token *tok) {
 // 次のトークンが期待している記号の時には、トークンを1つ読み進めて
 // 真を返す。それ以外の場合には偽を返す。
 bool consume(char *op) {
-	if (token->kind != TK_RESERVED && token->kind != TK_RETURN ||
+	if (token->kind != TK_RESERVED ||
 		strlen(op) != token->len ||
 		memcmp(token->str, op, token->len)) {
+		return false;
+	}
+
+	token = token->next;
+	return true;
+}
+
+bool consume_return() {
+	if (token->kind != TK_RETURN ||
+		strlen("return") != token->len ||
+		memcmp(token->str, "return", token->len)) {
+		return false;
+	}
+
+	token = token->next;
+	return true;
+}
+
+bool consume_if() {
+	if (token->kind != TK_IF ||
+		strlen("if") != token->len ||
+		memcmp(token->str, "if", token->len)) {
 		return false;
 	}
 
@@ -117,16 +141,30 @@ void program() {
 Node *stmt() {
 	Node *node;
 
-	if(consume("return")) {
+	if(consume_return()) {
 		node = calloc(1, sizeof(Node));
 		node->kind = ND_RETURN;
 		node->lhs = expr();
-	} else {
-		node = expr();
-	}
 
-	expect(";");
-	return node;
+		expect(";");
+		return node;
+	} else if (consume_if()) {
+		// if (A) B
+		// IFノードのlhsにAの評価結果, rhsにBの評価結果が格納される
+		node = calloc(1, sizeof(Node));
+		node->kind = ND_IF;
+		expect("(");
+		node->lhs = expr();
+		expect(")");
+
+		node->rhs = stmt();
+
+		return node;
+	} else {
+		node = new_node(ND_EXPR_STMT, expr(), NULL); // statement == expr ";" の時、exprは式文なので
+		expect(";");
+		return node;
+	}
 }
 
 Node *expr() {
@@ -244,8 +282,6 @@ Node *primary() {
 
 		return node;
 	}
-
-
 
 	return new_node_num(expect_number());
 }

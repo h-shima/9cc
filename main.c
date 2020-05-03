@@ -40,14 +40,11 @@ int main(int argc, char **argv) {
 	// 先頭の式から順にコード生成
 	for (int i = 0; code[i] ; i++) {
 		gen(code[i]);
-
-		// 式の評価結果としてスタックに1つの値が残っている
-		// はずなので、スタックが溢れないようにポップしておく
-		printf("	pop rax\n");
 	}
 
 	// エピローグ
 	// 最後の式の結果がRAXに残っているのでそれが返り値になる
+	printf(".L.return:\n");
 	printf("	mov rsp, rbp\n");
 	printf("	pop rbp\n");
 	printf("	ret\n");
