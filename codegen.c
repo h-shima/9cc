@@ -26,28 +26,28 @@ void gen(Node *node) {
 			gen(node->cond);
 			printf("	pop rax\n");
 			printf("	cmp rax, 0\n");
-			printf("	je .Lend.else%d\n", seq);
+			printf("	je .Lelse%d\n", seq);
 			// if (A) B における B のアセンブリを出力
 			gen(node->then);
-			printf("	jmp .Lend.end%d\n", seq);
-			printf(".Lend.else%d:\n", seq);
+			printf("	jmp .Lend%d\n", seq);
+			printf(".Lelse%d:\n", seq);
 			if (node->els) {
 				gen(node->els);
 			}
-			printf(".Lend.end%d:\n", seq);
+			printf(".Lend%d:\n", seq);
 			return;
 		}
 		case ND_WHILE: {
 			int seq = labelseq++;
 
-			printf(".LBegin%d:\n", seq);
+			printf(".Lbegin%d:\n", seq);
 			gen(node->cond);
 			printf("	pop rax\n");
 			printf("	cmp rax, 0\n");
-			printf("	je .Lend.end%d\n", seq);
+			printf("	je .Lend%d\n", seq);
 			gen(node->then);
-			printf("	jmp .LBegin%d\n", seq);
-			printf(".Lend.end%d:\n", seq);
+			printf("	jmp .Lbegin%d\n", seq);
+			printf(".Lend%d:\n", seq);
 			return;
 		}
 		case ND_FOR: {
@@ -75,7 +75,7 @@ void gen(Node *node) {
 			// returnの返り値になっている式の出力
 			gen(node->lhs);
 			printf("	pop rax\n");
-			printf("jmp .L.return\n");
+			printf("jmp .Lreturn\n");
 			return;
 		case ND_NUM:
 			printf("	push %d\n", node->val);
