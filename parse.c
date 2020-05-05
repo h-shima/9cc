@@ -71,6 +71,17 @@ bool consume_if() {
 	return true;
 }
 
+bool consume_else() {
+	if (token->kind != TK_IDENT ||
+		strlen("else") != token->len ||
+		memcmp(token->str, "else", token->len)) {
+		return false;
+	}
+
+	token = token->next;
+	return true;
+}
+
 Token *consume_ident() {
 	Token *tok = token;
 
@@ -158,6 +169,10 @@ Node *stmt() {
 		expect(")");
 
 		node->then = stmt();
+
+		if (consume_else()) {
+			node->els = stmt();
+		}
 
 		return node;
 	} else {

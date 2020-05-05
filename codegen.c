@@ -1,5 +1,7 @@
 #include "9cc.h"
 
+static int labelseq = 1;
+
 // 式を左辺値（左辺に書くことができる値のこと）として評価する
 // 変数のノードを引数として取り、その変数のアドレスを計算してそれをスタックにプッシュする
 void gen_lval(Node *node) {
@@ -17,16 +19,25 @@ void gen(Node *node) {
 			gen(node->lhs);
 			printf("	pop rax\n");
 			return;
-		case ND_IF:
+		case ND_IF: {
+			int seq = labelseq++;
+
 			// if (A) B における A の評価結果がスタックトップに入る
 			gen(node->cond);
 			printf("	pop rax\n");
 			printf("	cmp rax, 0\n");
-			printf("	je .LendXXX\n");
+			printf("	je .Lend.else%d\n", seq);
 			// if (A) B における B のアセンブリを出力
 			gen(node->then);
-			printf(".LendXXX:\n");
+			printf("	jmp .Lend.end%d\n", seq);
+			printf(".Lend.else%d:\n", seq);
+			if (node->els) {
+				gen(node->els);
+			}
+			printf(".Lend.end%d:\n", seq);
 			return;
+		}
+
 		case ND_RETURN:
 			// returnの返り値になっている式の出力
 			gen(node->lhs);

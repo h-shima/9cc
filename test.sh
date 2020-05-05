@@ -67,5 +67,10 @@ assert   3 'a = 1; if (a) b = 2; return a + b;'
 assert   1 'a = 1; if (0) a = 3; return a;'
 assert   5 'if (1) a = 2; b = 3; return a +b;'
 assert  10 'return 10; if (1) a = 2; return a;'
+# elseを使ったif文が使用できる
+assert  20 'if (0) a = 10; else a = 20; return a;'
+assert   3 'a = 1; if (a) b = 2; else b = 3; return a + b;'
+assert  20 'if (0) a = 10; else if (1) a = 20; return a;'
+assert  30 'a = 0; if (a) b = 10; else if (a) b = 20; else b = 30; return b;'
 
 echo OK
