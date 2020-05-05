@@ -82,6 +82,17 @@ bool consume_else() {
 	return true;
 }
 
+bool consume_while() {
+	if (token->kind != TK_IDENT ||
+		strlen("while") != token->len ||
+		memcmp(token->str, "while", token->len)) {
+		return false;
+	}
+
+	token = token->next;
+	return true;
+}
+
 Token *consume_ident() {
 	Token *tok = token;
 
@@ -174,6 +185,16 @@ Node *stmt() {
 			node->els = stmt();
 		}
 
+		return node;
+	} else if (consume_while()) {
+		// "while" "(" expr ")" stmt
+		node = calloc(1, sizeof(Node));
+		node->kind = ND_WHILE;
+		expect("(");
+		node->cond = expr();
+		expect(")");
+
+		node->then = stmt();
 		return node;
 	} else {
 		node = new_node(ND_EXPR_STMT, expr(), NULL); // statement == expr ";" の時、exprは式文なので

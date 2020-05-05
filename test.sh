@@ -72,5 +72,8 @@ assert  20 'if (0) a = 10; else a = 20; return a;'
 assert   3 'a = 1; if (a) b = 2; else b = 3; return a + b;'
 assert  20 'if (0) a = 10; else if (1) a = 20; return a;'
 assert  30 'a = 0; if (a) b = 10; else if (a) b = 20; else b = 30; return b;'
+# while文が使用できる
+assert   0 'a = 2; while (a) a = a -1; return a;'
+assert  10 'i=0; while(i<10) i=i+1; return i;'
 
 echo OK

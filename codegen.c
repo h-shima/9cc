@@ -37,7 +37,19 @@ void gen(Node *node) {
 			printf(".Lend.end%d:\n", seq);
 			return;
 		}
+		case ND_WHILE: {
+			int seq = labelseq++;
 
+			printf(".LBegin%d:\n", seq);
+			gen(node->cond);
+			printf("	pop rax\n");
+			printf("	cmp rax, 0\n");
+			printf("	je .Lend.end%d\n", seq);
+			gen(node->then);
+			printf("	jmp .LBegin%d\n", seq);
+			printf(".Lend.end%d:\n", seq);
+			return;
+		}
 		case ND_RETURN:
 			// returnの返り値になっている式の出力
 			gen(node->lhs);
