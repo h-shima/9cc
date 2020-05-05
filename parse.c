@@ -93,6 +93,17 @@ bool consume_while() {
 	return true;
 }
 
+bool consume_for() {
+	if (token->kind != TK_IDENT ||
+		strlen("for") != token->len ||
+		memcmp(token->str, "for", token->len)) {
+		return false;
+	}
+
+	token = token->next;
+	return true;
+}
+
 Token *consume_ident() {
 	Token *tok = token;
 
@@ -193,6 +204,29 @@ Node *stmt() {
 		expect("(");
 		node->cond = expr();
 		expect(")");
+
+		node->then = stmt();
+		return node;
+	} else if (consume_for()) {
+		// "for" "(" expr? ";" expr? ";" expr? ";" ")" stmt
+		node = calloc(1, sizeof(Node));
+		node->kind = ND_FOR;
+		expect("(");
+
+		if (!consume(";")) {
+			node->init = new_node(ND_EXPR_STMT, expr(), NULL);
+			consume(";");
+		}
+
+		if (!consume(";")) {
+			node->cond = expr();
+			consume(";");
+		}
+
+		if (!consume(")")) {
+			node->inc = new_node(ND_EXPR_STMT, expr(), NULL);
+			consume(")");
+		}
 
 		node->then = stmt();
 		return node;

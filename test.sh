@@ -75,5 +75,9 @@ assert  30 'a = 0; if (a) b = 10; else if (a) b = 20; else b = 30; return b;'
 # while文が使用できる
 assert   0 'a = 2; while (a) a = a -1; return a;'
 assert  10 'i=0; while(i<10) i=i+1; return i;'
+# for文が使用できる
+assert   5 'a=0; for(i = 5; i > 0; i = i - 1) a = a + 1; return a;'
+assert  55 'i=0; j=0; for (i=0; i<=10; i=i+1) j=i+j; return j;'
+assert   3 'for (;;) return 3; return 5;'
 
 echo OK
