@@ -19,12 +19,12 @@ void gen(Node *node) {
 			return;
 		case ND_IF:
 			// if (A) B における A の評価結果がスタックトップに入る
-			gen(node->lhs);
+			gen(node->cond);
 			printf("	pop rax\n");
 			printf("	cmp rax, 0\n");
 			printf("	je .LendXXX\n");
 			// if (A) B における B のアセンブリを出力
-			gen(node->rhs);
+			gen(node->then);
 			printf(".LendXXX:\n");
 			return;
 		case ND_RETURN:

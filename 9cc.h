@@ -51,6 +51,11 @@ struct Node {
 	Node *rhs;     // 右辺 (right-hand side)
 	int val;       // kind が ND_NUM の場合のみ使う
 	int offset;    // kind が ND_LVAR の場合のみ使う
+
+	// "if" statement
+	Node *cond;
+	Node *then;
+	Node *els;
 };
 
 // ローカル変数の型

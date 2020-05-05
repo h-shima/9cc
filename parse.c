@@ -154,10 +154,10 @@ Node *stmt() {
 		node = calloc(1, sizeof(Node));
 		node->kind = ND_IF;
 		expect("(");
-		node->lhs = expr();
+		node->cond = expr();
 		expect(")");
 
-		node->rhs = stmt();
+		node->then = stmt();
 
 		return node;
 	} else {
