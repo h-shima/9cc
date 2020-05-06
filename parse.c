@@ -5,7 +5,6 @@ Node *code[100];
 
 bool consume(char *op);
 Token *consume_ident();
-bool equal(char *op);
 void expect(char *op);
 int  expect_number();
 bool at_eof();

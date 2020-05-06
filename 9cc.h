@@ -7,11 +7,9 @@
 
 // トークンの種類
 typedef enum {
-	TK_RESERVED, // 記号
+	TK_RESERVED, // 予約語, 記号
 	TK_IDENT, // 識別子
 	TK_NUM, // 整数トークン
-	TK_RETURN, // return
-	TK_IF, // if
 	TK_EOF, // 入力の終わりを表すトークン
 } TokenKind;
 
@@ -79,6 +77,7 @@ extern Token *token;
 extern LVar *locals;
 
 Token *tokenize(char *input);
+bool equal(char *op);
 void program();
 void gen_lval(Node *node);
 void gen(Node *node);
