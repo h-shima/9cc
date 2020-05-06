@@ -41,12 +41,14 @@ typedef enum {
 	ND_WHILE, // while
 	ND_FOR, // for
 	ND_EXPR_STMT, // expression statement
+	ND_BLOCK, // compound statement
 } NodeKind;
 
 // 抽象構文木のノードの型
 typedef struct Node Node;
 struct Node {
 	NodeKind kind; // ノードの型
+	Node *next;    // next node
 	Node *lhs;     // 左辺 (left-hand side)
 	Node *rhs;     // 右辺 (right-hand side)
 	int val;       // kind が ND_NUM の場合のみ使う
@@ -58,6 +60,9 @@ struct Node {
 	Node *els;
 	Node *init;
 	Node *inc;
+
+	// compound statement
+	Node *body;
 };
 
 // ローカル変数の型

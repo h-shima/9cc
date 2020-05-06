@@ -79,5 +79,13 @@ assert  10 'i=0; while(i<10) i=i+1; return i;'
 assert   5 'a=0; for(i = 5; i > 0; i = i - 1) a = a + 1; return a;'
 assert  55 'i=0; j=0; for (i=0; i<=10; i=i+1) j=i+j; return j;'
 assert   3 'for (;;) return 3; return 5;'
+# block(複文)が使用できる
+assert  10 '{ i=0; while(i<10) i=i+1; return i; }'
+assert   3 '{ {1; {2;} return 3; }  return 4;}'
+assert  10 '{ i=0; while(i<10) i=i+1; return i; }'
+assert  55 '{ i=0; j=0; while(i<=10) {j=i+j; i=i+1;} return j; }'
+
+
+
 
 echo OK

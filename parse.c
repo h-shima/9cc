@@ -189,6 +189,17 @@ Node *stmt() {
 
 		node->then = stmt();
 		return node;
+	} else if (consume("{")) {
+		// "{" stmt* "}"
+		Node head = {};
+		Node *cur = &head;
+		while(!consume("}"))
+			cur = cur->next = stmt();
+
+		Node *node = calloc(1, sizeof(Node));
+		node->kind = ND_BLOCK;
+		node->body = head.next;
+		return node;
 	} else {
 		node = new_node(ND_EXPR_STMT, expr(), NULL); // statement == expr ";" の時、exprは式文なので
 		expect(";");
