@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200809L
 #include <ctype.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -35,6 +36,7 @@ typedef enum {
 	ND_LE,  // <=
 	ND_ASSIGN, // =
 	ND_LVAR, // ローカル変数
+	ND_FUNCALL, // Function call
 	ND_NUM, // 整数
 	ND_RETURN, // return
 	ND_IF, // if
@@ -63,6 +65,9 @@ struct Node {
 
 	// compound statement
 	Node *body;
+
+	// Function call
+	char *funcname;
 };
 
 // ローカル変数の型

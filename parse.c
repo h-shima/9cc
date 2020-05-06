@@ -289,6 +289,9 @@ Node *unary() {
 	return primary();
 }
 
+// primary = num
+//         | ident ("(" ")")? identの一つ先のトークンを読み、そのidentが変数名なのか関数名なのか見分ける
+//         | "(" expr ")"
 Node *primary() {
 	if (consume("(")) {
 		Node *node = expr();
@@ -299,25 +302,37 @@ Node *primary() {
 	Token *tok = consume_ident();
 	if (tok) {
 		Node *node = calloc(1, sizeof(Node));
-		node->kind = ND_LVAR;
 
-		LVar *lvar = find_lvar(tok);
+		// 関数呼び出しの場合
+		if (consume("(")) {
+//			printf("<<<<<<hogehoge>>>>>>");
 
-		if (lvar) {
-			node->offset = lvar->offset;
+			node->kind = ND_FUNCALL;
+			node->funcname = strndup(tok->str, tok->len);
+			expect(")");
 		} else {
-			lvar = calloc(1, sizeof(LVar));
-			lvar->next   = locals;
-			lvar->name   = tok->str;
-			lvar->len    = tok->len;
-			// locals はポインタなので、実体が無い場合は 0 が入っている
-			if (locals) {
-				lvar->offset = locals->offset + 8;
+			// 変数名の場合
+			node->kind = ND_LVAR;
+
+			LVar *lvar = find_lvar(tok);
+
+			if (lvar) {
+				node->offset = lvar->offset;
 			} else {
-				lvar->offset = 8;
+				lvar = calloc(1, sizeof(LVar));
+				lvar->next   = locals;
+				// TODO: strndupに変更する
+				lvar->name   = tok->str;
+				lvar->len    = tok->len;
+				// locals はポインタなので、実体が無い場合は 0 が入っている
+				if (locals) {
+					lvar->offset = locals->offset + 8;
+				} else {
+					lvar->offset = 8;
+				}
+				node->offset = lvar->offset;
+				locals = lvar;
 			}
-			node->offset = lvar->offset;
-			locals = lvar;
 		}
 
 		return node;

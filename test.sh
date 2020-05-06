@@ -1,11 +1,15 @@
 #!/bin/bash
+cat <<EOF | cc -xc -c -o tmp2.o -
+int ret3() { return 3; }
+int ret5() { return 5; }
+EOF
 
 assert(){
   expected="$1"
   input="$2"
 
   ./9cc "$input" > tmp.s
-  cc -o tmp tmp.s
+  cc -o tmp tmp.s tmp2.o
   ./tmp
   actual="$?"
 
@@ -17,6 +21,10 @@ assert(){
   fi
 }
 
+
+# 引数なしの関数呼び出しが使用できる
+assert   3 '{ return ret3(); }'
+assert   5 '{ return ret5(); }'
 # 1つだけ渡された整数の表示
 assert 0 'return 0;'
 assert 42 'return 42;'
@@ -84,8 +92,5 @@ assert  10 '{ i=0; while(i<10) i=i+1; return i; }'
 assert   3 '{ {1; {2;} return 3; }  return 4;}'
 assert  10 '{ i=0; while(i<10) i=i+1; return i; }'
 assert  55 '{ i=0; j=0; while(i<=10) {j=i+j; i=i+1;} return j; }'
-
-
-
 
 echo OK

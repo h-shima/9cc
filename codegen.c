@@ -53,6 +53,12 @@ static void gen_expr(Node *node) {
 			gen_expr(node->rhs);
 			store();
 			return;
+		case ND_FUNCALL:
+			printf("	mov rax, 0\n");
+			printf("	call %s\n", node->funcname);
+			// 関数からの返り値がraxに格納されているのでスタックにプッシュする
+			printf("	push rax\n");
+			return;
 	}
 
 	// 現ノードの左側をコンパイル
