@@ -9,7 +9,7 @@ LVar *locals;
 
 // 式を左辺値（左辺に書くことができる値のこと）として評価する
 // 変数のノードを引数として取り、その変数のアドレスを計算してそれをスタックにプッシュする
-static void gen_lval(Node *node) {
+static void gen_addr(Node *node) {
 	if (node->kind != ND_LVAR)
 		error("代入の左辺値が変数ではありません");
 
@@ -25,7 +25,7 @@ static void gen_expr(Node *node) {
 			return;
 		case ND_LVAR:
 			// nodeの変数が格納されているアドレスをスタックにプッシュする
-			gen_lval(node);
+			gen_addr(node);
 			printf("	pop rax\n");
 			// nodeの変数が格納されているアドレスからローカル変数の値を読み出し、
 			// raxレジスタにコピーする
@@ -34,7 +34,7 @@ static void gen_expr(Node *node) {
 			return;
 		case ND_ASSIGN:
 			// ノードの左辺（代入先の変数）の変数が格納されているアドレスをスタックにプッシュする
-			gen_lval(node->lhs);
+			gen_addr(node->lhs);
 			// ノードの右辺（左辺に代入する変数や数値を計算して数値にした値）をスタックにプッシュする
 			gen_expr(node->rhs);
 
