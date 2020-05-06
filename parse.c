@@ -22,6 +22,7 @@ Node *add();
 Node *mul();
 Node *unary();
 Node *primary();
+static void func_call(Token *tok, Node *node);
 
 // パースの時に、引数のトークンの変数がすでにパース済みか検索する
 // なければNULLを返す
@@ -290,7 +291,8 @@ Node *unary() {
 }
 
 // primary = num
-//         | ident ("(" (expression ("," expression)*)? ")")? identの一つ先のトークンを読み、そのidentが変数名なのか関数名なのか見分ける
+//         | func_call identの一つ先のトークンを読み、そのidentが変数名なのか関数名なのか見分ける
+//         | ident
 //         | "(" expr ")"
 Node *primary() {
 	if (consume("(")) {
@@ -305,22 +307,7 @@ Node *primary() {
 
 		// 関数呼び出しの場合
 		if (consume("(")) {
-			node->kind = ND_FUNCALL;
-			node->funcname = strndup(tok->str, tok->len);
-
-			Node head = {};
-			Node *cur = &head;
-
-			if (!equal(")")) {
-				cur = cur->next = expr();
-
-				while (consume(",")) {
-					cur = cur->next = expr();
-				}
-			}
-
-			node->args = head.next;
-			expect(")");
+			func_call(tok, node);
 		} else {
 			// 変数名の場合
 			node->kind = ND_LVAR;
@@ -332,7 +319,6 @@ Node *primary() {
 			} else {
 				lvar = calloc(1, sizeof(LVar));
 				lvar->next   = locals;
-				// TODO: strndupに変更する
 				lvar->name   = tok->str;
 				lvar->len    = tok->len;
 				// locals はポインタなので、実体が無い場合は 0 が入っている
@@ -350,4 +336,24 @@ Node *primary() {
 	}
 
 	return new_node_num(expect_number());
+}
+
+//ident "(" (expression ("," expression)*)? ")"
+static void func_call(Token *tok, Node *node) {
+	node->kind = ND_FUNCALL;
+	node->funcname = strndup(tok->str, tok->len);
+
+	Node head = {};
+	Node *cur = &head;
+
+	if (!equal(")")) {
+		cur = cur->next = expr();
+
+		while (consume(",")) {
+			cur = cur->next = expr();
+		}
+	}
+
+	node->args = head.next;
+	expect(")");
 }
