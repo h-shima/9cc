@@ -2,7 +2,7 @@
 
 static void store();
 static void load();
-static void gen_lvar(Node *node);
+static void gen_addr(Node *node);
 static void gen_expr(Node *node);
 static void gen_stmt(Node *node);
 
