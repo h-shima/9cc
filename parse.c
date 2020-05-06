@@ -290,7 +290,7 @@ Node *unary() {
 }
 
 // primary = num
-//         | ident ("(" ")")? identの一つ先のトークンを読み、そのidentが変数名なのか関数名なのか見分ける
+//         | ident ("(" (expression ("," expression)*)? ")")? identの一つ先のトークンを読み、そのidentが変数名なのか関数名なのか見分ける
 //         | "(" expr ")"
 Node *primary() {
 	if (consume("(")) {
@@ -305,10 +305,21 @@ Node *primary() {
 
 		// 関数呼び出しの場合
 		if (consume("(")) {
-//			printf("<<<<<<hogehoge>>>>>>");
-
 			node->kind = ND_FUNCALL;
 			node->funcname = strndup(tok->str, tok->len);
+
+			Node head = {};
+			Node *cur = &head;
+
+			if (!equal(")")) {
+				cur = cur->next = expr();
+
+				while (consume(",")) {
+					cur = cur->next = expr();
+				}
+			}
+
+			node->args = head.next;
 			expect(")");
 		} else {
 			// 変数名の場合

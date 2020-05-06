@@ -68,6 +68,7 @@ struct Node {
 
 	// Function call
 	char *funcname;
+	Node *args;
 };
 
 // ローカル変数の型

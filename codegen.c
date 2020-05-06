@@ -9,6 +9,8 @@ static void gen_stmt(Node *node);
 static int labelseq = 1;
 LVar *locals;
 
+static char *argreg[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
+
 // 式を左辺値（左辺に書くことができる値のこと）として評価する
 // 変数のノードを引数として取り、その変数のアドレスを計算してそれをスタックにプッシュする
 static void gen_addr(Node *node) {
@@ -53,12 +55,25 @@ static void gen_expr(Node *node) {
 			gen_expr(node->rhs);
 			store();
 			return;
-		case ND_FUNCALL:
+		case ND_FUNCALL: {
+			int nargs = 0;
+
+			for (Node *arg = node->args; arg; arg = arg->next) {
+				gen_expr(arg);
+				nargs++;
+			}
+
+			for (int i = 1; i <= nargs; i++) {
+				printf("	pop rax\n");
+				printf("	mov %s, rax\n", argreg[nargs - i]);
+			}
+
 			printf("	mov rax, 0\n");
 			printf("	call %s\n", node->funcname);
 			// 関数からの返り値がraxに格納されているのでスタックにプッシュする
 			printf("	push rax\n");
 			return;
+		}
 	}
 
 	// 現ノードの左側をコンパイル
