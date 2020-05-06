@@ -4,9 +4,8 @@
 Node *code[100];
 
 bool consume(char *op);
-bool consume_return();
-bool consume_if();
 Token *consume_ident();
+bool equal(char *op);
 void expect(char *op);
 int  expect_number();
 bool at_eof();
@@ -49,59 +48,10 @@ bool consume(char *op) {
 	return true;
 }
 
-bool consume_return() {
-	if (token->kind != TK_RETURN ||
-		strlen("return") != token->len ||
-		memcmp(token->str, "return", token->len)) {
-		return false;
-	}
-
-	token = token->next;
-	return true;
-}
-
-bool consume_if() {
-	if (token->kind != TK_IF ||
-		strlen("if") != token->len ||
-		memcmp(token->str, "if", token->len)) {
-		return false;
-	}
-
-	token = token->next;
-	return true;
-}
-
-bool consume_else() {
-	if (token->kind != TK_IDENT ||
-		strlen("else") != token->len ||
-		memcmp(token->str, "else", token->len)) {
-		return false;
-	}
-
-	token = token->next;
-	return true;
-}
-
-bool consume_while() {
-	if (token->kind != TK_IDENT ||
-		strlen("while") != token->len ||
-		memcmp(token->str, "while", token->len)) {
-		return false;
-	}
-
-	token = token->next;
-	return true;
-}
-
-bool consume_for() {
-	if (token->kind != TK_IDENT ||
-		strlen("for") != token->len ||
-		memcmp(token->str, "for", token->len)) {
-		return false;
-	}
-
-	token = token->next;
-	return true;
+// Check whether current token is `op` or not.
+bool equal(char *op) {
+	return strlen(op) == token->len &&
+			!strncmp(token->str, op, token->len);
 }
 
 Token *consume_ident() {
@@ -174,14 +124,18 @@ void program() {
 Node *stmt() {
 	Node *node;
 
-	if(consume_return()) {
+	if(equal("return")) {
+		token = token->next;
+
 		node = calloc(1, sizeof(Node));
 		node->kind = ND_RETURN;
 		node->lhs = expr();
 
 		expect(";");
 		return node;
-	} else if (consume_if()) {
+	} else if (equal("if")) {
+		token = token->next;
+
 		// if (A) B
 		// IFノードのlhsにAの評価結果, rhsにBの評価結果が格納される
 		node = calloc(1, sizeof(Node));
@@ -192,12 +146,16 @@ Node *stmt() {
 
 		node->then = stmt();
 
-		if (consume_else()) {
+		if (equal("else")) {
+			token = token->next;
+
 			node->els = stmt();
 		}
 
 		return node;
-	} else if (consume_while()) {
+	} else if (equal("while")) {
+		token = token->next;
+
 		// "while" "(" expr ")" stmt
 		node = calloc(1, sizeof(Node));
 		node->kind = ND_WHILE;
@@ -207,7 +165,9 @@ Node *stmt() {
 
 		node->then = stmt();
 		return node;
-	} else if (consume_for()) {
+	} else if (equal("for")) {
+		token = token->next;
+
 		// "for" "(" expr? ";" expr? ";" expr? ";" ")" stmt
 		node = calloc(1, sizeof(Node));
 		node->kind = ND_FOR;
