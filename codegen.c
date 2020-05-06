@@ -1,10 +1,15 @@
 #include "9cc.h"
 
+static void gen_lvar(Node *node);
+static void gen_expr(Node *node);
+static void gen_stmt(Node *node);
+
 static int labelseq = 1;
+LVar *locals;
 
 // 式を左辺値（左辺に書くことができる値のこと）として評価する
 // 変数のノードを引数として取り、その変数のアドレスを計算してそれをスタックにプッシュする
-void gen_lval(Node *node) {
+static void gen_lval(Node *node) {
 	if (node->kind != ND_LVAR)
 		error("代入の左辺値が変数ではありません");
 
@@ -13,74 +18,8 @@ void gen_lval(Node *node) {
 	printf("	push rax\n"); // 引数nodeのローカル変数の格納されているアドレスがスタックにプッシュされる
 }
 
-void gen(Node *node) {
+static void gen_expr(Node *node) {
 	switch (node->kind) {
-		case ND_EXPR_STMT:
-			gen(node->lhs);
-			printf("	pop rax\n");
-			return;
-		case ND_BLOCK:
-			for (Node *n = node->body; n; n = n->next)
-				gen(n);
-			return;
-		case ND_IF: {
-			int seq = labelseq++;
-
-			// if (A) B における A の評価結果がスタックトップに入る
-			gen(node->cond);
-			printf("	pop rax\n");
-			printf("	cmp rax, 0\n");
-			printf("	je .Lelse%d\n", seq);
-			// if (A) B における B のアセンブリを出力
-			gen(node->then);
-			printf("	jmp .Lend%d\n", seq);
-			printf(".Lelse%d:\n", seq);
-			if (node->els) {
-				gen(node->els);
-			}
-			printf(".Lend%d:\n", seq);
-			return;
-		}
-		case ND_WHILE: {
-			int seq = labelseq++;
-
-			printf(".Lbegin%d:\n", seq);
-			gen(node->cond);
-			printf("	pop rax\n");
-			printf("	cmp rax, 0\n");
-			printf("	je .Lend%d\n", seq);
-			gen(node->then);
-			printf("	jmp .Lbegin%d\n", seq);
-			printf(".Lend%d:\n", seq);
-			return;
-		}
-		case ND_FOR: {
-			int seq = labelseq++;
-
-			if (node->init) {
-				gen(node->init);
-			}
-			printf(".Lbegin%d:\n", seq);
-			if (node->cond) {
-				gen(node->cond);
-				printf("	pop rax\n");
-				printf("	cmp rax, 0\n");
-				printf("	je .Lend%d\n", seq);
-			}
-			gen(node->then);
-			if (node->inc) {
-				gen(node->inc);
-			}
-			printf("	jmp .Lbegin%d\n", seq);
-			printf(".Lend%d:\n", seq);
-			return;
-		}
-		case ND_RETURN:
-			// returnの返り値になっている式の出力
-			gen(node->lhs);
-			printf("	pop rax\n");
-			printf("jmp .Lreturn\n");
-			return;
 		case ND_NUM:
 			printf("	push %d\n", node->val);
 			return;
@@ -97,7 +36,7 @@ void gen(Node *node) {
 			// ノードの左辺（代入先の変数）の変数が格納されているアドレスをスタックにプッシュする
 			gen_lval(node->lhs);
 			// ノードの右辺（左辺に代入する変数や数値を計算して数値にした値）をスタックにプッシュする
-			gen(node->rhs);
+			gen_expr(node->rhs);
 
 			printf("	pop rdi\n");
 			printf("	pop rax\n");
@@ -108,49 +47,156 @@ void gen(Node *node) {
 	}
 
 	// 現ノードの左側をコンパイル
-	gen(node->lhs);
+	gen_expr(node->lhs);
 	// 現ノードの右側をコンパイル
-	gen(node->rhs);
+	gen_expr(node->rhs);
 
 	printf("	pop rdi\n");
 	printf("	pop rax\n");
 
 	switch (node->kind) {
-		case ND_ADD:
-			printf("	add rax, rdi\n");
-			break;
-		case ND_SUB:
-			printf("	sub rax, rdi\n");
-			break;
-		case ND_MUL:
-			printf("	imul rax, rdi\n");
-			break;
-		case ND_DIV:
-			printf("	cqo\n");
-			printf("	idiv rdi\n");
-			break;
-		case ND_EQ:
-			printf("	cmp rax, rdi\n");
-			printf("	sete al\n");
-			printf("	movzb rax, al\n");
-			break;
-		case ND_NE:
-			printf("	cmp rax, rdi\n");
-			printf("	setne al\n");
-			printf("	movzb rax, al\n");
-			break;
-		case ND_LT:
-			printf("	cmp rax, rdi\n");
-			printf("	setl al\n");
-			printf("	movzb rax, al\n");
-			break;
-		case ND_LE:
-			printf("	cmp rax, rdi\n");
-			printf("	setle al\n");
-			printf("	movzb rax, al\n");
-			break;
+    case ND_ADD:
+    	printf("	add rax, rdi\n");
+    	break;
+    case ND_SUB:
+    	printf("	sub rax, rdi\n");
+    	break;
+	case ND_MUL:
+		printf("	imul rax, rdi\n");
+		break;
+    case ND_DIV:
+    	printf("	cqo\n");
+    	printf("	idiv rdi\n");
+    	break;
+    case ND_EQ:
+    	printf("	cmp rax, rdi\n");
+    	printf("	sete al\n");
+    	printf("	movzb rax, al\n");
+    	break;
+    case ND_NE:
+    	printf("	cmp rax, rdi\n");
+    	printf("	setne al\n");
+    	printf("	movzb rax, al\n");
+    	break;
+    case ND_LT:
+    	printf("	cmp rax, rdi\n");
+    	printf("	setl al\n");
+    	printf("	movzb rax, al\n");
+    	break;
+    case ND_LE:
+    	printf("	cmp rax, rdi\n");
+    	printf("	setle al\n");
+    	printf("	movzb rax, al\n");
+    	break;
 	}
 
 	// 計算結果のraxレジスタをプッシュする
 	printf("	push rax\n");
+}
+
+static void gen_stmt(Node *node) {
+	switch (node->kind) {
+	case ND_EXPR_STMT:
+		gen_expr(node->lhs);
+		printf("	pop rax\n");
+		return;
+    case ND_BLOCK:
+    	for (Node *n = node->body; n; n = n->next)
+    		gen_stmt(n);
+    	return;
+    case ND_IF: {
+    	int seq = labelseq++;
+
+    	// if (A) B における A の評価結果がスタックトップに入る
+    	gen_expr(node->cond);
+    	printf("	pop rax\n");
+    	printf("	cmp rax, 0\n");
+    	printf("	je .Lelse%d\n", seq);
+    	// if (A) B における B のアセンブリを出力
+    	gen_stmt(node->then);
+    	printf("	jmp .Lend%d\n", seq);
+    	printf(".Lelse%d:\n", seq);
+    	if (node->els) {
+    		gen_stmt(node->els);
+    	}
+    	printf(".Lend%d:\n", seq);
+    	return;
+    }
+    case ND_WHILE: {
+    	int seq = labelseq++;
+
+		printf(".Lbegin%d:\n", seq);
+		gen_expr(node->cond);
+		printf("	pop rax\n");
+		printf("	cmp rax, 0\n");
+		printf("	je .Lend%d\n", seq);
+		gen_stmt(node->then);
+		printf("	jmp .Lbegin%d\n", seq);
+		printf(".Lend%d:\n", seq);
+		return;
+    }
+    case ND_FOR: {
+    	int seq = labelseq++;
+
+		if (node->init) {
+			gen_stmt(node->init);
+		}
+		printf(".Lbegin%d:\n", seq);
+		if (node->cond) {
+			gen_expr(node->cond);
+			printf("	pop rax\n");
+			printf("	cmp rax, 0\n");
+			printf("	je .Lend%d\n", seq);
+		}
+		gen_stmt(node->then);
+		if (node->inc) {
+			gen_stmt(node->inc);
+		}
+		printf("	jmp .Lbegin%d\n", seq);
+		printf(".Lend%d:\n", seq);
+		return;
+    }
+    case ND_RETURN:
+    	// returnの返り値になっている式の出力
+    	gen_expr(node->lhs);
+    	printf("	pop rax\n");
+    	printf("jmp .Lreturn\n");
+    	return;
+	}
+}
+
+void codegen() {
+	// あらかじめ必要な変数領域を計算する
+	// locals はポインタなので、実体が無い場合は 0 が入っている
+	int offset;
+	if (locals) {
+		offset = locals->offset;
+	} else {
+		offset = 0;
+	}
+
+	// アセンブリの前半部分を出力
+	printf(".intel_syntax noprefix\n");
+	printf(".global main\n");
+	printf("main:\n");
+
+	// プロローグ
+	// 変数領域を確保する
+	printf("        push rbp\n");
+	// ベースポインタが、スタックポインタと同じアドレスを指すようにrspの値をrbpにコピーする
+	printf("        mov rbp, rsp\n");
+	// 変数の領域分だけスタックポインタを下げて変数領域を確保する
+	printf("        sub rsp, %d\n", offset);
+
+	// 先頭の式から順にコード生成
+	for (int i = 0; code[i] ; i++) {
+		gen_stmt(code[i]);
+	}
+
+	// エピローグ
+	// 最後の式の結果がRAXに残っているのでそれが返り値になる
+	printf(".Lreturn:\n");
+	printf("        mov rsp, rbp\n");
+	printf("        pop rbp\n");
+	printf("        ret\n");
 }

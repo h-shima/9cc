@@ -84,8 +84,7 @@ extern LVar *locals;
 Token *tokenize(char *input);
 bool equal(char *op);
 void program();
-void gen_lval(Node *node);
-void gen(Node *node);
+void codegen();
 // パースの結果としての複数のノードを保存しておくための配列の宣言
 struct Node *code[100];
 
