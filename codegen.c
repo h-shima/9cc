@@ -1,5 +1,7 @@
 #include "9cc.h"
 
+static void store();
+static void load();
 static void gen_lvar(Node *node);
 static void gen_expr(Node *node);
 static void gen_stmt(Node *node);
@@ -18,6 +20,22 @@ static void gen_addr(Node *node) {
 	printf("	push rax\n"); // 引数nodeのローカル変数の格納されているアドレスがスタックにプッシュされる
 }
 
+static void store() {
+	printf("	pop rdi\n");
+	printf("	pop rax\n");
+	// raxレジスタの値（変数が格納されているアドレス）をアドレスとみなしてrdiレジスタの値（代入する数値）をストアする
+	printf("	mov [rax], rdi\n");
+	printf("	push rdi\n");
+}
+
+static void load() {
+	printf("	pop rax\n");
+	// nodeの変数が格納されているアドレスからローカル変数の値を読み出し、
+	// raxレジスタにコピーする
+	printf("	mov rax, [rax]\n");
+	printf("	push rax\n");
+}
+
 static void gen_expr(Node *node) {
 	switch (node->kind) {
 		case ND_NUM:
@@ -26,23 +44,14 @@ static void gen_expr(Node *node) {
 		case ND_LVAR:
 			// nodeの変数が格納されているアドレスをスタックにプッシュする
 			gen_addr(node);
-			printf("	pop rax\n");
-			// nodeの変数が格納されているアドレスからローカル変数の値を読み出し、
-			// raxレジスタにコピーする
-			printf("	mov rax, [rax]\n");
-			printf("	push rax\n");
+			load();
 			return;
 		case ND_ASSIGN:
 			// ノードの左辺（代入先の変数）の変数が格納されているアドレスをスタックにプッシュする
 			gen_addr(node->lhs);
 			// ノードの右辺（左辺に代入する変数や数値を計算して数値にした値）をスタックにプッシュする
 			gen_expr(node->rhs);
-
-			printf("	pop rdi\n");
-			printf("	pop rax\n");
-			// raxレジスタの値（変数が格納されているアドレス）をアドレスとみなしてrdiレジスタの値（代入する数値）をストアする
-			printf("	mov [rax], rdi\n");
-			printf("	push rdi\n");
+			store();
 			return;
 	}
 
