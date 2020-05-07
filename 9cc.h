@@ -37,6 +37,7 @@ typedef enum {
 	ND_ASSIGN, // =
 	ND_LVAR, // ローカル変数
 	ND_FUNCALL, // Function call
+	ND_FUNCDEF, // Function Definition
 	ND_NUM, // 整数
 	ND_RETURN, // return
 	ND_IF, // if

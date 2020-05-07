@@ -13,6 +13,7 @@ Node *new_node(NodeKind kind, Node *lhs, Node *rhs);
 Node *new_node_num(int val);
 Node *new_node_ident(Token *tok);
 
+static Node *funcdef();
 Node *stmt();
 Node *expr();
 Node *assign();
@@ -22,6 +23,7 @@ Node *add();
 Node *mul();
 Node *unary();
 Node *primary();
+static Node *block();
 static void func_call(Token *tok, Node *node);
 
 // パースの時に、引数のトークンの変数がすでにパース済みか検索する
@@ -113,12 +115,36 @@ Node *new_node_ident(Token *tok) {
 	return node;
 }
 
+
+// program = funcdef*
 void program() {
 	int i = 0;
 	while (!at_eof())
-		code[i++] = stmt();
+		code[i++] = funcdef();
 
 	code[i] = NULL;
+}
+
+// funcdef = ident "(" ")" block
+static Node *funcdef() {
+	Node *node = calloc(1, sizeof(Node));
+	Node *blk;
+
+	if (token->kind == TK_IDENT) {
+		node->kind = ND_FUNCDEF;
+		node->funcname = strndup(token->str, token->len);
+		token = token->next;
+	} else {
+		error("識別子ではありません");
+	}
+
+	expect("(");
+	expect(")");
+
+	blk = block();
+	node->body = blk->body;
+
+	return node;
 }
 
 Node *stmt() {
@@ -190,22 +216,27 @@ Node *stmt() {
 
 		node->then = stmt();
 		return node;
-	} else if (consume("{")) {
-		// "{" stmt* "}"
-		Node head = {};
-		Node *cur = &head;
-		while(!consume("}"))
-			cur = cur->next = stmt();
-
-		Node *node = calloc(1, sizeof(Node));
-		node->kind = ND_BLOCK;
-		node->body = head.next;
-		return node;
+	} else if (equal("{")) {
+		block();
 	} else {
 		node = new_node(ND_EXPR_STMT, expr(), NULL); // statement == expr ";" の時、exprは式文なので
 		expect(";");
 		return node;
 	}
+}
+
+// "{" stmt* "}"
+static Node *block() {
+	consume("{");
+	Node head = {};
+	Node *cur = &head;
+	while(!consume("}"))
+		cur = cur->next = stmt();
+
+	Node *node = calloc(1, sizeof(Node));
+	node->kind = ND_BLOCK;
+	node->body = head.next;
+	return node;
 }
 
 Node *expr() {

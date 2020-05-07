@@ -8,6 +8,7 @@ static void gen_stmt(Node *node);
 
 static int labelseq = 1;
 LVar *locals;
+static char *current_func;
 
 static char *argreg[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 
@@ -190,43 +191,47 @@ static void gen_stmt(Node *node) {
     	// returnの返り値になっている式の出力
     	gen_expr(node->lhs);
     	printf("	pop rax\n");
-    	printf("jmp .Lreturn\n");
+    	printf("jmp .Lreturn.%s\n", current_func);
     	return;
 	}
 }
 
 void codegen() {
-	// あらかじめ必要な変数領域を計算する
-	// locals はポインタなので、実体が無い場合は 0 が入っている
-	int offset;
-	if (locals) {
-		offset = locals->offset;
-	} else {
-		offset = 0;
-	}
-
-	// アセンブリの前半部分を出力
 	printf(".intel_syntax noprefix\n");
-	printf(".global main\n");
-	printf("main:\n");
 
-	// プロローグ
-	// 変数領域を確保する
-	printf("        push rbp\n");
-	// ベースポインタが、スタックポインタと同じアドレスを指すようにrspの値をrbpにコピーする
-	printf("        mov rbp, rsp\n");
-	// 変数の領域分だけスタックポインタを下げて変数領域を確保する
-	printf("        sub rsp, %d\n", offset);
-
-	// 先頭の式から順にコード生成
 	for (int i = 0; code[i] ; i++) {
-		gen_stmt(code[i]);
-	}
+		current_func = code[i]->funcname;
 
-	// エピローグ
-	// 最後の式の結果がRAXに残っているのでそれが返り値になる
-	printf(".Lreturn:\n");
-	printf("        mov rsp, rbp\n");
-	printf("        pop rbp\n");
-	printf("        ret\n");
+		// あらかじめ必要な変数領域を計算する
+		// locals はポインタなので、実体が無い場合は 0 が入っている
+		int offset;
+		if (locals) {
+			offset = locals->offset;
+		} else {
+			offset = 0;
+		}
+
+		// アセンブリの前半部分を出力
+		printf(".global %s\n", current_func);
+		printf("%s:\n", current_func);
+
+		// プロローグ
+		// 変数領域を確保する
+		printf("        push rbp\n");
+		// ベースポインタが、スタックポインタと同じアドレスを指すようにrspの値をrbpにコピーする
+		printf("        mov rbp, rsp\n");
+		// 変数の領域分だけスタックポインタを下げて変数領域を確保する
+		printf("        sub rsp, %d\n", offset);
+
+		for (Node *node = code[i]->body; node; node = node->next) {
+			gen_stmt(node);
+		}
+
+		// エピローグ
+		// 最後の式の結果がRAXに残っているのでそれが返り値になる
+		printf(".Lreturn.%s:\n", current_func);
+		printf("        mov rsp, rbp\n");
+		printf("        pop rbp\n");
+		printf("        ret\n");
+	}
 }
