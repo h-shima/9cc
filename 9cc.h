@@ -6,6 +6,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+//
+// tokenize.c
+//
 // トークンの種類
 typedef enum {
 	TK_RESERVED, // 予約語, 記号
@@ -24,6 +27,18 @@ struct Token {
 	int len;        // トークンの長さ
 };
 
+bool equal(char *op);
+Token *skip(char *op);
+bool consume(char *op);
+void expect(char *op);
+Token *consume_ident();
+int expect_number();
+bool at_eof();
+Token *tokenize(char *input);
+
+//
+// parse.c
+//
 // 抽象構文木のノードの種類
 typedef enum {
 	ND_ADD, // +
@@ -81,25 +96,25 @@ struct LVar {
 	int offset; // RBPからのオフセット
 };
 
+void program();
+
+//
+// codegen.c
+//
+void codegen();
+
+// container.c
+void error(char *fmt, ...);
+void error_at(char *loc, char *fmt, ...);
+
+//
+// use with multiple files
+//
 // 入力プログラム
 extern char *user_input;
 // 現在着目しているトークン
 extern Token *token;
 // ローカル変数(ローカル変数リストのトップ)
 extern LVar *locals;
-
-Token *tokenize(char *input);
-void program();
-void codegen();
 // パースの結果としての複数のノードを保存しておくための配列の宣言
 struct Node *code[100];
-
-void error(char *fmt, ...);
-void error_at(char *loc, char *fmt, ...);
-
-bool consume(char *op);
-bool equal(char *op);
-Token *consume_ident();
-void expect(char *op);
-int expect_number();
-bool at_eof();

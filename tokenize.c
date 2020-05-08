@@ -64,9 +64,6 @@ static Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
 	return tok;
 }
 
-// #memcmp
-// int memcmp(const void *str1, const void *str2, size_t len);
-// str1とstr2を"len文字分"比較して等しい場合は0を返す
 static bool startswith(char *p, char *q) {
 	return memcmp(p, q, strlen(q)) == 0;
 }
@@ -146,7 +143,7 @@ Token *tokenize(char *input) {
 			continue;
 		}
 
-		error_at(p, "数ではありません");
+		error_at(p, "不正なトークンです");
 	}
 
 	new_token(TK_EOF, cur, p, 0);
