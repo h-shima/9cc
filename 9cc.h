@@ -89,7 +89,6 @@ extern Token *token;
 extern LVar *locals;
 
 Token *tokenize(char *input);
-bool equal(char *op);
 void program();
 void codegen();
 // パースの結果としての複数のノードを保存しておくための配列の宣言

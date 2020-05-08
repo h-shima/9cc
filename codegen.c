@@ -1,15 +1,13 @@
 #include "9cc.h"
 
+LVar *locals;
+static int labelseq = 1;
 static void store();
 static void load();
 static void gen_addr(Node *node);
 static void gen_expr(Node *node);
 static void gen_stmt(Node *node);
-
-static int labelseq = 1;
-LVar *locals;
 static char *current_func;
-
 static char *argreg[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 
 // 式を左辺値（左辺に書くことができる値のこと）として評価する

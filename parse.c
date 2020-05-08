@@ -3,32 +3,33 @@
 // セミコロン区切りで複数の式が書けるため、パースの結果としての複数のノードを保存しておくための配列
 Node *code[100];
 
-bool consume(char *op);
-Token *consume_ident();
-void expect(char *op);
-int  expect_number();
-bool at_eof();
+static bool consume(char *op);
+static Token *consume_ident();
+static void expect(char *op);
+static int expect_number();
+static bool at_eof();
 
-Node *new_node(NodeKind kind, Node *lhs, Node *rhs);
-Node *new_node_num(int val);
-Node *new_node_ident(Token *tok);
+static Node *new_node(NodeKind kind, Node *lhs, Node *rhs);
+static Node *new_node_num(int val);
 
 static Node *funcdef();
-Node *stmt();
-Node *expr();
-Node *assign();
-Node *equality();
-Node *relational();
-Node *add();
-Node *mul();
-Node *unary();
-Node *primary();
+static Node *stmt();
+static Node *expr();
+static Node *assign();
+static Node *equality();
+static Node *relational();
+static Node *add();
+static Node *mul();
+static Node *unary();
+static Node *primary();
 static Node *block();
 static void func_call(Token *tok, Node *node);
 
+static LVar *find_lvar(Token *tok);
+
 // パースの時に、引数のトークンの変数がすでにパース済みか検索する
 // なければNULLを返す
-LVar *find_lvar(Token *tok) {
+static LVar *find_lvar(Token *tok) {
 	for (LVar *var = locals; var; var = var->next) {
 		if (var->len == tok->len && !memcmp(tok->str, var->name, var->len)) {
 			return var;
@@ -39,7 +40,7 @@ LVar *find_lvar(Token *tok) {
 
 // 次のトークンが期待している記号の時には、トークンを1つ読み進めて
 // 真を返す。それ以外の場合には偽を返す。
-bool consume(char *op) {
+static bool consume(char *op) {
 	if (token->kind != TK_RESERVED ||
 		strlen(op) != token->len ||
 		memcmp(token->str, op, token->len)) {
@@ -51,12 +52,12 @@ bool consume(char *op) {
 }
 
 // Check whether current token is `op` or not.
-bool equal(char *op) {
+static bool equal(char *op) {
 	return strlen(op) == token->len &&
 			!strncmp(token->str, op, token->len);
 }
 
-Token *consume_ident() {
+static Token *consume_ident() {
 	Token *tok = token;
 
 	if (token->kind == TK_IDENT) {
@@ -69,7 +70,7 @@ Token *consume_ident() {
 
 // 次のトークンが期待している記号の時には、トークンを1つ読み進める。
 // それ以外の場合にはエラーを報告する。
-void expect(char *op) {
+static void expect(char *op) {
 	if (token->kind != TK_RESERVED ||
 		strlen(op) != token->len ||
 		memcmp(token->str, op, token->len)) {
@@ -81,7 +82,7 @@ void expect(char *op) {
 
 // 次のトークンが数値の場合、トークンを1つ読み進めてその数値を返す。
 // それ以外の場合にはエラーを報告する。
-int expect_number() {
+static int expect_number() {
 	if (token->kind != TK_NUM)
 		error_at(token->str, "数ではありません");
 	int val = token->val;
@@ -89,11 +90,11 @@ int expect_number() {
 	return val;
 }
 
-bool at_eof() {
+static bool at_eof() {
 	return token->kind == TK_EOF;
 }
 
-Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
+static Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
 	Node *node = calloc(1, sizeof(Node));
 	node->kind = kind;
 	node->lhs  = lhs;
@@ -101,20 +102,12 @@ Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
 	return node;
 }
 
-Node *new_node_num(int val) {
+static Node *new_node_num(int val) {
 	Node *node = calloc(1, sizeof(Node));
 	node->kind = ND_NUM;
 	node->val  = val;
 	return node;
 }
-
-Node *new_node_ident(Token *tok) {
-	Node *node = calloc(1, sizeof(Node));
-	node->kind = ND_LVAR;
-	node->offset = (tok->str[0] - 'a' + 1) * 8;
-	return node;
-}
-
 
 // program = funcdef*
 void program() {
@@ -147,7 +140,7 @@ static Node *funcdef() {
 	return node;
 }
 
-Node *stmt() {
+static Node *stmt() {
 	Node *node;
 
 	if(equal("return")) {
@@ -239,12 +232,12 @@ static Node *block() {
 	return node;
 }
 
-Node *expr() {
+static Node *expr() {
 	Node *node = assign();
 	return node;
 }
 
-Node *assign() {
+static Node *assign() {
 	Node *node = equality();
 
 	if (consume("=")) {
@@ -254,7 +247,7 @@ Node *assign() {
 	return node;
 }
 
-Node *equality() {
+static Node *equality() {
 	Node *node = relational();
 
 	for (;;) {
@@ -267,7 +260,7 @@ Node *equality() {
 	}
 }
 
-Node *relational() {
+static Node *relational() {
 	Node *node = add();
 
 	for (;;) {
@@ -284,7 +277,7 @@ Node *relational() {
 	}
 }
 
-Node *add() {
+static Node *add() {
 	Node *node = mul();
 
 	for (;;) {
@@ -297,7 +290,7 @@ Node *add() {
 	}
 }
 
-Node *mul() {
+static Node *mul() {
 	Node *node = unary();
 
 	for (;;) {
@@ -312,7 +305,7 @@ Node *mul() {
 
 // unary = ("+" | "-")? unary
 //       | primary
-Node *unary() {
+static Node *unary() {
 	if (consume("+"))
 		return unary();
 	if (consume("-"))
@@ -325,7 +318,7 @@ Node *unary() {
 //         | func_call identの一つ先のトークンを読み、そのidentが変数名なのか関数名なのか見分ける
 //         | ident
 //         | "(" expr ")"
-Node *primary() {
+static Node *primary() {
 	if (consume("(")) {
 		Node *node = expr();
 		expect(")");

@@ -1,12 +1,12 @@
 #include "9cc.h"
 
-Token *new_token(TokenKind kind, Token *cur, char *str, int len);
-bool startswith(char *p, char *q);
-int is_alnum(char c);
+static Token *new_token(TokenKind kind, Token *cur, char *str, int len);
+static bool startswith(char *p, char *q);
+static int is_alnum(char c);
 Token *token;
 
 // 新しいトークンを作成してcurに繋げる
-Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
+static Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
 	Token *tok = calloc(1, sizeof(Token));
 	tok->kind = kind;
 	tok->str = str;
@@ -18,11 +18,11 @@ Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
 // #memcmp
 // int memcmp(const void *str1, const void *str2, size_t len);
 // str1とstr2を"len文字分"比較して等しい場合は0を返す
-bool startswith(char *p, char *q) {
+static bool startswith(char *p, char *q) {
 	return memcmp(p, q, strlen(q)) == 0;
 }
 
-int is_alnum(char c) {
+static int is_alnum(char c) {
 	return ('a' <= c && c <= 'z') ||
 	       ('A' <= c && c <= 'Z') ||
 			('0' <= c && c <= '9') ||
