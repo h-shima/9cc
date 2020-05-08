@@ -5,6 +5,55 @@ static bool startswith(char *p, char *q);
 static int is_alnum(char c);
 Token *token;
 
+//
+// Token operators
+//
+bool equal(char *op) {
+	return strlen(op) == token->len &&
+		   !strncmp(token->str, op, token->len);
+}
+
+Token *skip(char *op) {
+	if (!equal(op))
+		error("expected '%s'\n", op);
+	return token->next;
+}
+
+bool consume(char *op) {
+	if (!equal(op))
+		return false;
+	token = token->next;
+	return true;
+}
+
+void expect(char *op) {
+	if (!equal(op))
+		error_at(token->str,"'%s'ではありません", op);
+	token = token->next;
+}
+
+Token *consume_ident() {
+	Token *tok = token;
+
+	if (token->kind == TK_IDENT) {
+		token = token->next;
+		return tok;
+	}
+	return NULL;
+}
+
+int expect_number() {
+	if (token->kind != TK_NUM)
+		error_at(token->str, "数ではありません");
+	int val = token->val;
+	token = token->next;
+	return val;
+}
+
+bool at_eof() {
+	return token->kind == TK_EOF;
+}
+
 // 新しいトークンを作成してcurに繋げる
 static Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
 	Token *tok = calloc(1, sizeof(Token));

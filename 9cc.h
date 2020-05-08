@@ -96,3 +96,10 @@ struct Node *code[100];
 
 void error(char *fmt, ...);
 void error_at(char *loc, char *fmt, ...);
+
+bool consume(char *op);
+bool equal(char *op);
+Token *consume_ident();
+void expect(char *op);
+int expect_number();
+bool at_eof();

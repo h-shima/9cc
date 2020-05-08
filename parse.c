@@ -3,12 +3,6 @@
 // セミコロン区切りで複数の式が書けるため、パースの結果としての複数のノードを保存しておくための配列
 Node *code[100];
 
-static bool consume(char *op);
-static Token *consume_ident();
-static void expect(char *op);
-static int expect_number();
-static bool at_eof();
-
 static Node *new_node(NodeKind kind, Node *lhs, Node *rhs);
 static Node *new_node_num(int val);
 
@@ -36,62 +30,6 @@ static LVar *find_lvar(Token *tok) {
 		}
 	}
 	return NULL;
-}
-
-// 次のトークンが期待している記号の時には、トークンを1つ読み進めて
-// 真を返す。それ以外の場合には偽を返す。
-static bool consume(char *op) {
-	if (token->kind != TK_RESERVED ||
-		strlen(op) != token->len ||
-		memcmp(token->str, op, token->len)) {
-		return false;
-	}
-
-	token = token->next;
-	return true;
-}
-
-// Check whether current token is `op` or not.
-static bool equal(char *op) {
-	return strlen(op) == token->len &&
-			!strncmp(token->str, op, token->len);
-}
-
-static Token *consume_ident() {
-	Token *tok = token;
-
-	if (token->kind == TK_IDENT) {
-		token = token->next;
-		return tok;
-	}
-
-	return NULL;
-}
-
-// 次のトークンが期待している記号の時には、トークンを1つ読み進める。
-// それ以外の場合にはエラーを報告する。
-static void expect(char *op) {
-	if (token->kind != TK_RESERVED ||
-		strlen(op) != token->len ||
-		memcmp(token->str, op, token->len)) {
-		error_at(token->str,"'%s'ではありません", op);
-	}
-
-	token = token->next;
-}
-
-// 次のトークンが数値の場合、トークンを1つ読み進めてその数値を返す。
-// それ以外の場合にはエラーを報告する。
-static int expect_number() {
-	if (token->kind != TK_NUM)
-		error_at(token->str, "数ではありません");
-	int val = token->val;
-	token = token->next;
-	return val;
-}
-
-static bool at_eof() {
-	return token->kind == TK_EOF;
 }
 
 static Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
