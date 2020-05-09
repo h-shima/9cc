@@ -1,19 +1,18 @@
 #include "9cc.h"
 
-LVar *locals;
+Var *locals;
 static int labelseq = 1;
 static void store();
 static void load();
 static void gen_addr(Node *node);
 static void gen_expr(Node *node);
 static void gen_stmt(Node *node);
-static char *current_func;
 static char *argreg[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 
 // 式を左辺値（左辺に書くことができる値のこと）として評価する
 // 変数のノードを引数として取り、その変数のアドレスを計算してそれをスタックにプッシュする
 static void gen_addr(Node *node) {
-	if (node->kind != ND_LVAR)
+	if (node->kind != ND_VAR)
 		error("代入の左辺値が変数ではありません");
 
 	printf("	mov rax, rbp\n");
@@ -42,7 +41,7 @@ static void gen_expr(Node *node) {
 		case ND_NUM:
 			printf("	push %d\n", node->val);
 			return;
-		case ND_LVAR:
+		case ND_VAR:
 			// nodeの変数が格納されているアドレスをスタックにプッシュする
 			gen_addr(node);
 			load();
@@ -189,7 +188,7 @@ static void gen_stmt(Node *node) {
     	// returnの返り値になっている式の出力
     	gen_expr(node->lhs);
     	printf("	pop rax\n");
-    	printf("jmp .Lreturn.%s\n", current_func);
+    	printf("jmp .Lreturn.%s\n", current_func->name);
     	return;
 	}
 }
@@ -197,9 +196,7 @@ static void gen_stmt(Node *node) {
 void codegen() {
 	printf(".intel_syntax noprefix\n");
 
-	for (int i = 0; code[i] ; i++) {
-		current_func = code[i]->funcname;
-
+	while(current_func) {
 		// あらかじめ必要な変数領域を計算する
 		// locals はポインタなので、実体が無い場合は 0 が入っている
 		int offset;
@@ -210,8 +207,8 @@ void codegen() {
 		}
 
 		// アセンブリの前半部分を出力
-		printf(".global %s\n", current_func);
-		printf("%s:\n", current_func);
+		printf(".global %s\n", current_func->name);
+		printf("%s:\n", current_func->name);
 
 		// プロローグ
 		// 変数領域を確保する
@@ -221,15 +218,17 @@ void codegen() {
 		// 変数の領域分だけスタックポインタを下げて変数領域を確保する
 		printf("        sub rsp, %d\n", offset);
 
-		for (Node *node = code[i]->body; node; node = node->next) {
+		for (Node *node = current_func->node; node; node = node->next) {
 			gen_stmt(node);
 		}
 
 		// エピローグ
 		// 最後の式の結果がRAXに残っているのでそれが返り値になる
-		printf(".Lreturn.%s:\n", current_func);
+		printf(".Lreturn.%s:\n", current_func->name);
 		printf("        mov rsp, rbp\n");
 		printf("        pop rbp\n");
 		printf("        ret\n");
+
+		current_func = current_func->next;
 	}
 }

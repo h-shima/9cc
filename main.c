@@ -1,6 +1,7 @@
 #include "9cc.h"
 
 char *user_input;
+Function *current_func;
 
 int main(int argc, char **argv) {
 
@@ -12,7 +13,7 @@ int main(int argc, char **argv) {
 	// 引数で渡された文字列全体をトークナイズしてパースする
 	user_input = argv[1];
 	token = tokenize(user_input);
-	program();
+	current_func = program();
 	codegen();
 	return 0;
 }

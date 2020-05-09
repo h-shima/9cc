@@ -1,12 +1,11 @@
 #include "9cc.h"
 
-// セミコロン区切りで複数の式が書けるため、パースの結果としての複数のノードを保存しておくための配列
-Node *code[100];
+static Node *new_node(NodeKind kind);
+static Node *new_binary(NodeKind kind, Node *lhs, Node *rhs);
+static Node *new_unary(NodeKind kind, Node *expr);
+static Node *new_num(int val);
 
-static Node *new_node(NodeKind kind, Node *lhs, Node *rhs);
-static Node *new_node_num(int val);
-
-static Node *funcdef();
+static Function *funcdef();
 static Node *stmt();
 static Node *expr();
 static Node *assign();
@@ -16,15 +15,16 @@ static Node *add();
 static Node *mul();
 static Node *unary();
 static Node *primary();
-static Node *block();
+static Node *compound_stmt();
+static Node *expr_stmt();
 static void func_call(Token *tok, Node *node);
 
-static LVar *find_lvar(Token *tok);
+static Var *find_var(Token *tok);
 
 // パースの時に、引数のトークンの変数がすでにパース済みか検索する
 // なければNULLを返す
-static LVar *find_lvar(Token *tok) {
-	for (LVar *var = locals; var; var = var->next) {
+static Var *find_var(Token *tok) {
+	for (Var *var = locals; var; var = var->next) {
 		if (var->len == tok->len && !memcmp(tok->str, var->name, var->len)) {
 			return var;
 		}
@@ -32,32 +32,93 @@ static LVar *find_lvar(Token *tok) {
 	return NULL;
 }
 
-static Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
+static Node *new_node(NodeKind kind) {
 	Node *node = calloc(1, sizeof(Node));
 	node->kind = kind;
+	return node;
+}
+
+static Node *new_binary(NodeKind kind, Node *lhs, Node *rhs) {
+	Node *node = new_node(kind);
 	node->lhs  = lhs;
 	node->rhs  = rhs;
 	return node;
 }
 
-static Node *new_node_num(int val) {
-	Node *node = calloc(1, sizeof(Node));
-	node->kind = ND_NUM;
-	node->val  = val;
+static Node *new_unary(NodeKind kind, Node *expr) {
+	Node *node = new_node(kind);
+	node->lhs = expr;
 	return node;
 }
 
-// program = funcdef*
-void program() {
-	int i = 0;
-	while (!at_eof())
-		code[i++] = funcdef();
-
-	code[i] = NULL;
+static Node *new_num(int val) {
+	Node *node = new_node(ND_NUM);
+	node->val = val;
+	return node;
 }
 
-// funcdef = ident "(" ")" block
-static Node *funcdef() {
+//
+// ****** EBNF ******
+//
+
+// program = funcdef*
+
+// funcdef = ident "("(ident ("," ident)*)?")" compound-stmt
+
+// stmt	= "return" expr ";"
+//      | "if" "(" expr ")" stmt ("else" stmt)?
+//      | "for" "(" expr_stmt? ";" expr? ";" expr_stmt? ")" stmt
+//      | "while" "(" expr ")" stmt
+//      | compound-stmt
+//      | expr_stmt ";"
+
+// compound-stmt = "{" stmt* "}"
+
+// expr-stmt = expr
+
+// expr = assign
+
+// assign = equality ("=" assign)?
+
+// equality = relational ("==" relational | "!=" relational)*
+
+// relational = add ("<" add | "<=" add | ">" add | ">=" add)*
+
+// add = mul ("+" mul | "-" mul)*
+
+// mul = unary ("*" unary | "/" unary)*
+
+// unary = ("+" | "-") unary
+//       | primary
+
+// primary = "(" expr ")"
+//         | ident     // identの一つ先のトークンを読み、
+//         | funcall // そのidentが変数名なのか関数名なのか見分ける
+//         | num
+
+// funcall = ident "(" (assign ("," assign)*)? ")"
+
+//
+// ****** EBNF ******
+//
+
+// program = funcdef*
+Function *program() {
+	Function head = {};
+	Function *cur = &head;
+	while (!at_eof()) {
+		cur->next = funcdef();
+		cur = cur->next;
+	}
+
+	return head.next;
+}
+
+// TODO: 引数を取れるように修正
+// funcdef = ident "(" ")" compound_stmt  今
+// funcdef = ident "("(ident ("," ident)*)?")" compound-stmt　これから
+static Function *funcdef() {
+	Function *fn = calloc(1, sizeof(Function));
 	Node *node = calloc(1, sizeof(Node));
 	Node *blk;
 
@@ -72,20 +133,26 @@ static Node *funcdef() {
 	expect("(");
 	expect(")");
 
-	blk = block();
+	blk = compound_stmt();
 	node->body = blk->body;
 
-	return node;
+	fn->name = node->funcname;
+	fn->node = node->body;
+	return fn;
 }
 
+// stmt	= "return" expr ";"
+//      | "if" "(" expr ")" stmt ("else" stmt)?
+//      | "for" "(" expr_stmt? ";" expr? ";" expr_stmt? ")" stmt
+//      | "while" "(" expr ")" stmt
+//      | compound-stmt
+//      | expr_stmt ";"
 static Node *stmt() {
 	Node *node;
 
 	if(equal("return")) {
 		token = token->next;
-
-		node = calloc(1, sizeof(Node));
-		node->kind = ND_RETURN;
+		node = new_node(ND_RETURN);
 		node->lhs = expr();
 
 		expect(";");
@@ -95,8 +162,7 @@ static Node *stmt() {
 
 		// if (A) B
 		// IFノードのlhsにAの評価結果, rhsにBの評価結果が格納される
-		node = calloc(1, sizeof(Node));
-		node->kind = ND_IF;
+		node = new_node(ND_IF);
 		expect("(");
 		node->cond = expr();
 		expect(")");
@@ -114,8 +180,7 @@ static Node *stmt() {
 		token = token->next;
 
 		// "while" "(" expr ")" stmt
-		node = calloc(1, sizeof(Node));
-		node->kind = ND_WHILE;
+		node = new_node(ND_WHILE);
 		expect("(");
 		node->cond = expr();
 		expect(")");
@@ -126,12 +191,11 @@ static Node *stmt() {
 		token = token->next;
 
 		// "for" "(" expr? ";" expr? ";" expr? ";" ")" stmt
-		node = calloc(1, sizeof(Node));
-		node->kind = ND_FOR;
+		node = new_node(ND_FOR);
 		expect("(");
 
 		if (!consume(";")) {
-			node->init = new_node(ND_EXPR_STMT, expr(), NULL);
+			node->init = new_unary(ND_EXPR_STMT, expr());
 			consume(";");
 		}
 
@@ -141,101 +205,112 @@ static Node *stmt() {
 		}
 
 		if (!consume(")")) {
-			node->inc = new_node(ND_EXPR_STMT, expr(), NULL);
+			node->inc = new_unary(ND_EXPR_STMT, expr());
 			consume(")");
 		}
 
 		node->then = stmt();
 		return node;
 	} else if (equal("{")) {
-		block();
+		compound_stmt();
 	} else {
-		node = new_node(ND_EXPR_STMT, expr(), NULL); // statement == expr ";" の時、exprは式文なので
+		node = new_unary(ND_EXPR_STMT, expr()); // statement == expr ";" の時、exprは式文なので
 		expect(";");
 		return node;
 	}
 }
 
-// "{" stmt* "}"
-static Node *block() {
+// compound_stmt = "{" stmt* "}"
+static Node *compound_stmt() {
 	consume("{");
 	Node head = {};
 	Node *cur = &head;
 	while(!consume("}"))
 		cur = cur->next = stmt();
 
-	Node *node = calloc(1, sizeof(Node));
-	node->kind = ND_BLOCK;
+	Node *node = new_node(ND_BLOCK);
 	node->body = head.next;
 	return node;
 }
 
+// expr_stmt = expr
+static Node *expr_stmt() {
+	Node *node = expr();
+	return node;
+}
+
+// expr = assign
 static Node *expr() {
 	Node *node = assign();
 	return node;
 }
 
+// assign = equality ("=" assign)?
 static Node *assign() {
 	Node *node = equality();
 
 	if (consume("=")) {
-		node = new_node(ND_ASSIGN, node, assign());
+		node = new_binary(ND_ASSIGN, node, assign());
 	}
 
 	return node;
 }
 
+// equality = relational ("==" relational | "!=" relational)*
 static Node *equality() {
 	Node *node = relational();
 
 	for (;;) {
 		if (consume("=="))
-			node = new_node(ND_EQ, node, relational());
+			node = new_binary(ND_EQ, node, relational());
 		else if (consume("!="))
-			node = new_node(ND_NE, node, relational());
+			node = new_binary(ND_NE, node, relational());
 		else
 			return node;
 	}
 }
 
+// relational = add ("<" add | "<=" add | ">" add | ">=" add)*
 static Node *relational() {
 	Node *node = add();
 
 	for (;;) {
 		if (consume("<"))
-			node = new_node(ND_LT, node, add());
+			node = new_binary(ND_LT, node, add());
 		else if (consume("<="))
-			node = new_node(ND_LE, node, add());
+			node = new_binary(ND_LE, node, add());
 		else if (consume(">"))
-			node = new_node(ND_LT, add(), node);
+			node = new_binary(ND_LT, add(), node);
 		else if (consume(">="))
-			node = new_node(ND_LE, add(), node);
+			node = new_binary(ND_LE, add(), node);
 		else
 			return node;
 	}
 }
 
+// add = mul ("+" mul | "-" mul)*
 static Node *add() {
 	Node *node = mul();
 
 	for (;;) {
 		if (consume("+"))
-			node = new_node(ND_ADD, node, mul());
+			node = new_binary(ND_ADD, node, mul());
 		else if (consume("-"))
-			node = new_node(ND_SUB, node, mul());
+			node = new_binary(ND_SUB, node, mul());
 		else
 			return node;
 	}
 }
 
+// mul = unary ("*" unary | "/" unary)*
 static Node *mul() {
 	Node *node = unary();
 
 	for (;;) {
 		if (consume("*"))
-			node = new_node(ND_MUL, node, unary());
+			node = new_binary(ND_MUL, node, unary());
 		else if (consume("/"))
-			node = new_node(ND_DIV, node, unary());
+			node = new_binary(ND_DIV, node, unary());
 		else
 			return node;
 	}
@@ -247,7 +322,7 @@ static Node *unary() {
 	if (consume("+"))
 		return unary();
 	if (consume("-"))
-		return new_node(ND_SUB, new_node_num(0), unary());
+		return new_binary(ND_SUB, new_num(0), unary());
 
 	return primary();
 }
@@ -272,32 +347,32 @@ static Node *primary() {
 			func_call(tok, node);
 		} else {
 			// 変数名の場合
-			node->kind = ND_LVAR;
+			node->kind = ND_VAR;
 
-			LVar *lvar = find_lvar(tok);
+			Var *var = find_var(tok);
 
-			if (lvar) {
-				node->offset = lvar->offset;
+			if (var) {
+				node->offset = var->offset;
 			} else {
-				lvar = calloc(1, sizeof(LVar));
-				lvar->next   = locals;
-				lvar->name   = tok->str;
-				lvar->len    = tok->len;
+				var = calloc(1, sizeof(Var));
+				var->next   = locals;
+				var->name   = tok->str;
+				var->len    = tok->len;
 				// locals はポインタなので、実体が無い場合は 0 が入っている
 				if (locals) {
-					lvar->offset = locals->offset + 8;
+					var->offset = locals->offset + 8;
 				} else {
-					lvar->offset = 8;
+					var->offset = 8;
 				}
-				node->offset = lvar->offset;
-				locals = lvar;
+				node->offset = var->offset;
+				locals = var;
 			}
 		}
 
 		return node;
 	}
 
-	return new_node_num(expect_number());
+	return new_num(expect_number());
 }
 
 //ident "(" (expression ("," expression)*)? ")"
