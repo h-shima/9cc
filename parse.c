@@ -27,7 +27,7 @@ static Var *locals;
 // なければNULLを返す
 static Var *find_var(Token *tok) {
 	for (Var *var = locals; var; var = var->next) {
-		if (var->len == tok->len && !memcmp(tok->str, var->name, var->len)) {
+		if (var->len == tok->len && !memcmp(tok->loc, var->name, var->len)) {
 			return var;
 		}
 	}
@@ -128,7 +128,7 @@ static Function *funcdef() {
 
 	if (token->kind == TK_IDENT) {
 		node->kind = ND_FUNCDEF;
-		node->funcname = strndup(token->str, token->len);
+		node->funcname = strndup(token->loc, token->len);
 		token = token->next;
 	} else {
 		error("識別子ではありません");
@@ -361,7 +361,7 @@ static Node *primary() {
 			} else {
 				var = calloc(1, sizeof(Var));
 				var->next   = locals;
-				var->name   = tok->str;
+				var->name   = tok->loc;
 				var->len    = tok->len;
 				// locals はポインタなので、実体が無い場合は 0 が入っている
 				if (locals) {
@@ -383,7 +383,7 @@ static Node *primary() {
 //ident "(" (expression ("," expression)*)? ")"
 static void func_call(Token *tok, Node *node) {
 	node->kind = ND_FUNCALL;
-	node->funcname = strndup(tok->str, tok->len);
+	node->funcname = strndup(tok->loc, tok->len);
 
 	Node head = {};
 	Node *cur = &head;

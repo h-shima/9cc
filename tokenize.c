@@ -1,6 +1,6 @@
 #include "9cc.h"
 
-static Token *new_token(TokenKind kind, Token *cur, char *str, int len);
+static Token *new_token(TokenKind kind, Token *cur, char *loc, int len);
 static bool startswith(char *p, char *q);
 static int is_alnum(char c);
 Token *token;
@@ -10,7 +10,7 @@ Token *token;
 //
 bool equal(char *op) {
 	return strlen(op) == token->len &&
-		   !strncmp(token->str, op, token->len);
+		   !strncmp(token->loc, op, token->len);
 }
 
 Token *skip(char *op) {
@@ -28,7 +28,7 @@ bool consume(char *op) {
 
 void expect(char *op) {
 	if (!equal(op))
-		error_at(token->str,"'%s'ではありません", op);
+		error_at(token->loc,"'%s'ではありません", op);
 	token = token->next;
 }
 
@@ -44,7 +44,7 @@ Token *consume_ident() {
 
 int expect_number() {
 	if (token->kind != TK_NUM)
-		error_at(token->str, "数ではありません");
+		error_at(token->loc, "数ではありません");
 	int val = token->val;
 	token = token->next;
 	return val;
@@ -55,10 +55,10 @@ bool at_eof() {
 }
 
 // 新しいトークンを作成してcurに繋げる
-static Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
+static Token *new_token(TokenKind kind, Token *cur, char *loc, int len) {
 	Token *tok = calloc(1, sizeof(Token));
 	tok->kind = kind;
-	tok->str = str;
+	tok->loc = loc;
 	cur->next = tok;
 	tok->len = len;
 	return tok;
