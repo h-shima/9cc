@@ -20,6 +20,8 @@ static Node *expr_stmt();
 static void func_call(Token *tok, Node *node);
 
 static Var *find_var(Token *tok);
+// ローカル変数リストのトップ
+static Var *locals;
 
 // パースの時に、引数のトークンの変数がすでにパース済みか検索する
 // なければNULLを返す
@@ -118,6 +120,8 @@ Function *program() {
 // funcdef = ident "(" ")" compound_stmt  今
 // funcdef = ident "("(ident ("," ident)*)?")" compound-stmt　これから
 static Function *funcdef() {
+	locals = NULL;
+
 	Function *fn = calloc(1, sizeof(Function));
 	Node *node = calloc(1, sizeof(Node));
 	Node *blk;
@@ -138,6 +142,7 @@ static Function *funcdef() {
 
 	fn->name = node->funcname;
 	fn->node = node->body;
+	fn->locals = locals;
 	return fn;
 }
 

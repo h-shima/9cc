@@ -126,7 +126,5 @@ void error_at(char *loc, char *fmt, ...);
 extern char *user_input;
 // 現在着目しているトークン
 extern Token *token;
-// ローカル変数(ローカル変数リストのトップ)
-extern Var *locals;
 // パースの結果としての複数のノードを保存しておくための配列の宣言
 struct Function *code[100];

@@ -192,16 +192,15 @@ static void gen_stmt(Node *node) {
     	return;
 	}
 }
-
+// TODO: ハウスキーピング周りを綺麗にする。関数の引数とローカル変数の扱いを良い感じにする。
 void codegen() {
 	printf(".intel_syntax noprefix\n");
 
 	while(current_func) {
 		// あらかじめ必要な変数領域を計算する
-		// locals はポインタなので、実体が無い場合は 0 が入っている
 		int offset;
-		if (locals) {
-			offset = locals->offset;
+		if (current_func->locals) {
+			offset = current_func->locals->offset;
 		} else {
 			offset = 0;
 		}
