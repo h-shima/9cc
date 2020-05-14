@@ -8,11 +8,12 @@ int main(int argc, char **argv) {
 	if (argc != 2)
 		error("%s: invalid number of arguments", argv[0]);
 
+	// Tokenize and parse.
 	Token *tok = tokenize(argv[1]);
-	Function *prog = parse(tok);
+	Program *prog = parse(tok);
 
 	// Assign offsets to local variables.
-	for (Function *fn = prog; fn; fn = fn->next) {
+	for (Function *fn = prog->fns; fn; fn = fn->next) {
 		int offset = 32; // 32 for callee-saved registers
 		for (Var *var = fn->locals; var; var = var->next) {
 			offset += var->ty->size;
