@@ -9,7 +9,7 @@ int main(int argc, char **argv) {
 		error("%s: invalid number of arguments", argv[0]);
 
 	// Tokenize and parse.
-	Token *tok = tokenize(argv[1]);
+	Token *tok = tokenize_file(argv[1]);
 	Program *prog = parse(tok);
 
 	// Assign offsets to local variables.
