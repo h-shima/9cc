@@ -210,10 +210,9 @@ int main() {
 	assert(0, "\x00"[0], "\"\\x00\"[0]");
 	assert(119, "\x77"[0], "\"\\x77\"[0]");
 
-// Handle block scope
-//	assert(2, ({ int x=2; { int x=3; } x; }), "({ int x=2; { int x=3; } x; })");
-//	assert(2, ({ int x=2; { int x=3; } int y=4; x; }), "({ int x=2; { int x=3; } int y=4; x; })");
-//	assert(3, ({ int x=2; { x=3; } x; }), "({ int x=2; { x=3; } x; })");
+	assert(2, ({ int x=2; { int x=3; } x; }), "({ int x=2; { int x=3; } x; })");
+	assert(2, ({ int x=2; { int x=3; } int y=4; x; }), "({ int x=2; { int x=3; } int y=4; x; })");
+	assert(3, ({ int x=2; { x=3; } x; }), "({ int x=2; { x=3; } x; })");
 
 	printf("OK\n");
 	return 0;
